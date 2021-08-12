@@ -17,16 +17,16 @@
   ],
   "editor.formatOnSave": true,
   "[javascript]": {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
   },
   "[javascriptreact]": {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
   },
   "[typescript]": {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
   },
   "[typescriptreact]": {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
   },
   "editor.tabCompletion": "on",
   "editor.tabSize": 2,

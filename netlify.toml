@@ -1,14 +1,16 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+[build]
+  command = "yarn netlify-build"
+  publish = "packages/app/out"
+
 [[plugins]]
   package = 'netlify-plugin-contextual-env'
   [plugins.inputs]
     mode = 'prefix'
 
 [context.deploy-preview]
-  command = "cd packages/contracts; yarn compile; cd ../../packages/app; yarn build;"
-  
 
   [context.deploy-preview.environment]
     # this is a random private key needed for hardhat compile to work
@@ -28,7 +30,6 @@
     PRIVATE_SALE_DEFAULT_SUPPLY = "7500000"
 
 [context.production]
-  command = "cd packages/contracts; yarn compile; cd ../../packages/app; yarn build;"
 
   [context.production.environment]
     # this is a random private key needed for hardhat compile to work
@@ -50,9 +51,6 @@
 
 
 [context.rinkeby]
-  command = "cd packages/contracts; yarn compile; cd ../../packages/app; yarn build;"
-
-  publish = "packages/app/out"
   [context.rinkeby.environment]
     # this is a random private key needed for hardhat compile to work
     PRIVATE_KEY = "31c18a7e6aaf93d1548ec9ae1b322c75400cb39627ae82bd1bb761ea79224a7d"
@@ -71,8 +69,6 @@
     PRIVATE_SALE_DEFAULT_SUPPLY = "7500000"
 
 [context.develop]
-  command = "cd packages/contracts; yarn compile; cd ../../packages/app; yarn build;"
-
   [context.develop.environment]
     # this is a random private key needed for hardhat compile to work
     PRIVATE_KEY = "31c18a7e6aaf93d1548ec9ae1b322c75400cb39627ae82bd1bb761ea79224a7d"

@@ -1,14 +1,14 @@
-import { Votes, Vote, PendingVotes } from 'pages/grant-elections/[type]';
-import { useEffect, useState } from 'react';
-import { useRef } from 'react';
-import BeneficiaryCard, { BeneficiaryMetadata } from './BeneficiaryCard';
-import beneficiariesHashMap from '../../fixtures/beneficiaries.json';
 import {
-  ElectionMetadata,
-} from '@popcorn/utils/Contracts';
+  IpfsClient,
+} from '@popcorn/utils';
+import { ElectionMetadata, BeneficiaryRegistryAdapter, BeneficiaryApplication } from '@popcorn/contracts/adapters';
+import { ContractsContext } from 'context/Web3/contracts';
 import { BigNumber, utils } from 'ethers';
+import { PendingVotes, Vote, Votes } from 'pages/grant-elections/[type]';
+import { useContext, useEffect, useRef, useState } from 'react';
+import BeneficiaryCardWithElectionData from './BeneficiaryCardWithElectionData';
 
-interface IGrantRound {
+interface GrantRoundProps {
   voiceCredits: number;
   votes?: Vote[];
   assignVotes?: (grantTerm: number, vote: Vote) => void;
@@ -31,17 +31,18 @@ const convertBlockchainVotesToVoiceCredits = (
   );
 };
 
-export default function GrantRound({
+const GrantRound: React.FC<GrantRoundProps> = ({
   voiceCredits,
   assignVotes,
   pendingVotes,
   election,
   scrollToMe = false,
-}: IGrantRound): JSX.Element {
+}) => {
+  const { contracts } = useContext(ContractsContext);
   const ref = useRef(null);
   const [votes, setVotes] = useState<Votes>({ total: 0 });
   const [beneficiariesWithMetadata, setBeneficiaries] = useState<
-    BeneficiaryMetadata[]
+    BeneficiaryApplication[]
   >([]);
 
   useEffect(() => {
@@ -50,19 +51,28 @@ export default function GrantRound({
     }
   }, [election]);
 
-  const getBeneficiary = (address: string, votes): BeneficiaryMetadata => {
-    const beneficiary = beneficiariesHashMap[process.env.CHAIN_ID || '31337'][address.toLowerCase()];
-    beneficiary.totalVotes = votes[address];
+  const getBeneficiary = async (
+    address: string,
+  ): Promise<BeneficiaryApplication> => {
+    const beneficiary = await BeneficiaryRegistryAdapter(
+      contracts.beneficiary,
+      IpfsClient,
+    ).getBeneficiaryApplication(address);
     return beneficiary;
+  };
+
+  const getAllBeneficiaries = async (registeredBeneficiaries: string[]) => {
+    setBeneficiaries(
+      await Promise.all(
+        registeredBeneficiaries.map((address) => getBeneficiary(address)),
+      ),
+    );
   };
 
   useEffect(() => {
     if (votes && election) {
-      setBeneficiaries(
-        election.registeredBeneficiaries.map((address) =>
-          getBeneficiary(address, votes),
-        ),
-      );
+      // FIXME: Promise being ignored
+      getAllBeneficiaries(election.registeredBeneficiaries);
     }
   }, [votes, election]);
 
@@ -74,23 +84,26 @@ export default function GrantRound({
   if (!election) {
     return <></>;
   }
-
   return (
     <div
       ref={ref}
       className="mb-16 w-full flex flex-row flex-wrap items-center"
     >
       {beneficiariesWithMetadata?.map((beneficiary) => (
-        <BeneficiaryCard
-          key={beneficiary.address}
-          election={election}
+        <BeneficiaryCardWithElectionData
+          key={beneficiary.beneficiaryAddress}
+          electionProps={{
+            election: election,
+            pendingVotes: pendingVotes,
+            voiceCredits: voiceCredits,
+            votesAssignedByUser: 0,
+            assignVotes: assignVotes,
+            totalVotes: votes[beneficiary.beneficiaryAddress],
+          }}
           beneficiary={beneficiary}
-          pendingVotes={pendingVotes}
-          voiceCredits={voiceCredits}
-          votesAssignedByUser={0}
-          assignVotes={assignVotes}
         />
       ))}
     </div>
   );
-}
+};
+export default GrantRound;

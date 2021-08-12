@@ -4,11 +4,11 @@ interface MainActionButtonProps {
   disabled?: boolean;
 }
 
-export default function MainActionButton({
+const MainActionButton: React.FC<MainActionButtonProps> = ({
   label,
   handleClick,
   disabled = false,
-}: MainActionButtonProps): JSX.Element {
+}) => {
   return (
     <button
       type="button"
@@ -19,4 +19,5 @@ export default function MainActionButton({
       {label}
     </button>
   );
-}
+};
+export default MainActionButton;

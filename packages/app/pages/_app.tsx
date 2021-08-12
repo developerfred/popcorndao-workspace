@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { ThemeProvider } from 'styled-components';
-import { MuiThemeProvider, StylesProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import theme from '../styles/theme';
 import '../styles/globals.css';
 import Router from 'next/router';
-import { GlobalLinearProgress } from 'containers/GlobalLinearProgress';
-import { StateProvider } from 'app/store';
+import { StateProvider } from '../context/store';
 import { Web3ReactProvider } from '@web3-react/core';
 import { Web3Provider } from '@ethersproject/providers';
-import ContractsWrapper from 'app/contracts';
-import SwapChainModal from 'app/SwapChainModal';
-import ElectionsProvider from '../app/elections';
+import ContractsWrapper from '../context/Web3/contracts';
+import SwapChainModal from 'components/SwapChainModal';
+import ElectionsProvider from '../context/Web3/elections';
 import { SingleActionModalContainer } from 'components/Modal/SingleActionModalContainer';
 import { DualActionModalContainer } from 'components/Modal/DualActionModalContainer';
+import NotificationsContainer from 'components/Notifications/NotificationsContainer';
+import { Debug } from 'components/Debug';
+import DualActionWideModalContainer from 'components/Modal/DualActionWideModalContainer';
 
 function getLibrary(provider: any): Web3Provider {
   const library = new Web3Provider(provider);
@@ -38,7 +36,7 @@ export default function MyApp(props) {
     });
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Remove the server-side injected CSS.
     const jssStyles = document.querySelector('#jss-server-side');
     if (jssStyles) {
@@ -61,27 +59,21 @@ export default function MyApp(props) {
           rel="stylesheet"
         ></link>
       </Head>
-
-      <StylesProvider injectFirst>
-        <MuiThemeProvider theme={theme}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <GlobalLinearProgress visible={loading} />
-            <Web3ReactProvider getLibrary={getLibrary}>
-              <ContractsWrapper>
-                <ElectionsProvider>
-                  <StateProvider>
-                    <SwapChainModal />
-                    <SingleActionModalContainer />
-                    <DualActionModalContainer />
-                    <Component {...pageProps} />
-                  </StateProvider>
-                </ElectionsProvider>
-              </ContractsWrapper>
-            </Web3ReactProvider>
-          </ThemeProvider>
-        </MuiThemeProvider>
-      </StylesProvider>
+      <Web3ReactProvider getLibrary={getLibrary}>
+        <StateProvider>
+          <ContractsWrapper>
+            <ElectionsProvider>
+              <SingleActionModalContainer />
+              <DualActionModalContainer />
+              <DualActionWideModalContainer />
+              <Component {...pageProps} />
+              <SwapChainModal />
+              <NotificationsContainer />
+              <Debug />
+            </ElectionsProvider>
+          </ContractsWrapper>
+        </StateProvider>
+      </Web3ReactProvider>
     </React.Fragment>
   );
 }

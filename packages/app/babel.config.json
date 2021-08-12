@@ -6,7 +6,7 @@
       {
         "alias": {
           "@popcorn/ui": "../ui/src",
-          "@popcorn/utils": "../utils/src",
+          "@popcorn/utils": "../utils",
           "@popcorn/contracts": "../contracts",
           "containers": "./containers",
           "app": "./app"

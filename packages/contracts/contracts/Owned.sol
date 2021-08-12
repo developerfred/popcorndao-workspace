@@ -2,14 +2,25 @@ pragma solidity >=0.7.0 <0.8.0;
 
 // https://docs.synthetix.io/contracts/source/contracts/owned
 contract Owned {
+  /* ========== STATE VARIABLES ========== */
+
   address public owner;
   address public nominatedOwner;
+
+  /* ========== EVENTS ========== */
+
+  event OwnerNominated(address newOwner);
+  event OwnerChanged(address oldOwner, address newOwner);
+
+  /* ========== CONSTRUCTOR ========== */
 
   constructor(address _owner) public {
     require(_owner != address(0), "Owner address cannot be 0");
     owner = _owner;
     emit OwnerChanged(address(0), _owner);
   }
+
+  /* ========== MUTATIVE FUNCTIONS ========== */
 
   function nominateNewOwner(address _owner) external onlyOwner {
     nominatedOwner = _owner;
@@ -26,10 +37,7 @@ contract Owned {
     nominatedOwner = address(0);
   }
 
-  modifier onlyOwner {
-    _onlyOwner();
-    _;
-  }
+  /* ========== RESTRICTED FUNCTIONS ========== */
 
   function _onlyOwner() private view {
     require(
@@ -38,6 +46,10 @@ contract Owned {
     );
   }
 
-  event OwnerNominated(address newOwner);
-  event OwnerChanged(address oldOwner, address newOwner);
+  /* ========== MODIFIER ========== */
+
+  modifier onlyOwner() {
+    _onlyOwner();
+    _;
+  }
 }

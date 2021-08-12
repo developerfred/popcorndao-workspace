@@ -1,33 +1,26 @@
-import { PendingVotes, Vote } from 'pages/grant-elections/[type]';
+import { BeneficiaryApplication } from '@popcorn/contracts/adapters';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { useState } from 'react';
-import { ElectionMetadata } from '../../../utils/src/Contracts/GrantElection/GrantElectionAdapter';
-import { BeneficiaryMetadata } from './BeneficiaryCard';
+import { ElectionProps } from './ElectionProps';
 
-interface VoteSlider {
-  beneficiary: BeneficiaryMetadata;
-  election: ElectionMetadata;
-  assignVotes?: (grantTerm: number, vote: Vote) => void;
-  voiceCredits?: number;
-  pendingVotes: PendingVotes;
+interface VoteSliderProps {
+  beneficiary: BeneficiaryApplication;
+  electionProps: ElectionProps;
 }
 
-export default function VoteSlider({
+const VoteSlider: React.FC<VoteSliderProps> = ({
   beneficiary,
-  election,
-  assignVotes,
-  voiceCredits,
-  pendingVotes,
-}: VoteSlider): JSX.Element {
-  const [votesAssignedByuser, setVotesAssignedByUser] = useState(0);
+  electionProps,
+}) => {
+  const [votesAssignedByUser, setVotesAssignedByUser] = useState(0);
 
   const sliderSteps = [
     [0, '0%'],
-    [voiceCredits * 0.25, '25%'],
-    [voiceCredits * 0.5, '50%'],
-    [voiceCredits * 0.75, '75%'],
-    [voiceCredits, '100%'],
+    [electionProps.voiceCredits * 0.25, '25%'],
+    [electionProps.voiceCredits * 0.5, '50%'],
+    [electionProps.voiceCredits * 0.75, '75%'],
+    [electionProps.voiceCredits, '100%'],
   ];
   const sliderMarks = {};
   sliderSteps.forEach(function (step) {
@@ -35,18 +28,32 @@ export default function VoteSlider({
   });
 
   function handleSliderChange(value: number) {
-      if (((voiceCredits - (pendingVotes[election.electionTerm].total)) <= 0)) {
-        if (pendingVotes[election.electionTerm].votes[beneficiary.address] > value) {
-          setVotesAssignedByUser(value);
-          assignVotes(election.electionTerm, { address: beneficiary.address, votes: value });
-        }
-        return;
+    if (
+      electionProps.voiceCredits -
+      electionProps.pendingVotes[electionProps.election.electionTerm].total <=
+      0
+    ) {
+      if (
+        electionProps.pendingVotes[electionProps.election.electionTerm].votes[
+        beneficiary.beneficiaryAddress
+        ] > value
+      ) {
+        setVotesAssignedByUser(value);
+        electionProps.assignVotes(electionProps.election.electionTerm, {
+          address: beneficiary.beneficiaryAddress,
+          votes: value,
+        });
       }
-      setVotesAssignedByUser(value);
-     assignVotes(election.electionTerm, { address: beneficiary.address, votes: value });
+      return;
+    }
+    setVotesAssignedByUser(value);
+    electionProps.assignVotes(electionProps.election.electionTerm, {
+      address: beneficiary.beneficiaryAddress,
+      votes: value,
+    });
   }
-  if (election.electionStateStringShort !== 'voting') {
-    return <></>
+  if (electionProps.election.electionStateStringShort !== 'voting') {
+    return <></>;
   }
 
   return (
@@ -54,36 +61,37 @@ export default function VoteSlider({
       <span className="flex flex-row justify-between">
         <p className="text-lg font-medium text-gray-700">Votes</p>
         <span className="text-base text-gray-700 flex flex-row">
-          <p className="font-medium">{beneficiary.totalVotes || 0}</p>
+          <p className="font-medium">{electionProps.totalVotes || 0}</p>
           <p className="mr-4">
-            {votesAssignedByuser > 0 && `+${votesAssignedByuser}`} 
+            {votesAssignedByUser > 0 && `+${votesAssignedByUser}`}
           </p>
         </span>
       </span>
-      {assignVotes && voiceCredits > 0 && (
+      {electionProps.assignVotes && electionProps.voiceCredits > 0 && (
         <div className="w-11/12 ml-1 pb-3">
           <Slider
-            key={beneficiary?.address}
+            key={beneficiary?.beneficiaryAddress}
             className="mt-2"
-            value={votesAssignedByuser}
+            value={votesAssignedByUser}
             onChange={(value) => handleSliderChange(value)}
             min={0}
-            max={voiceCredits}
+            max={electionProps.voiceCredits}
             step={1}
             marks={sliderMarks}
             dotStyle={{ backgroundColor: '#93C5FD', border: '#93C5FD' }}
             activeDotStyle={{ backgroundColor: '#3B82F6', border: '#3B82F6' }}
             railStyle={{ backgroundColor: '#93C5FD', height: '4px' }}
             trackStyle={{ backgroundColor: '#3B82F6', height: '4px' }}
-            /* handleStyle={{
-              border: '#F29F05',
-              backgroundColor: '#fff',
-              height: '14px',
-              width: '14px',
-            }} */
+          /* handleStyle={{
+            border: '#F29F05',
+            backgroundColor: '#fff',
+            height: '14px',
+            width: '14px',
+          }} */
           />
         </div>
       )}
     </>
   );
-}
+};
+export default VoteSlider;

@@ -1,19 +1,26 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { useWeb3React } from '@web3-react/core';
 import { Web3Provider } from '@ethersproject/providers';
-import { connectors } from '../../containers/Web3/connectors';
-import ElectionSection from 'containers/GrantElections/ElectionSection';
-import NavBar from '../../containers/NavBar/NavBar';
-import { ContractsContext } from '../../app/contracts';
-import { GrantElectionAdapter, ElectionTerm } from '@popcorn/utils/Contracts';
+import {
+  ElectionTerm,
+  ElectionTermIntToName,
+  GrantElectionAdapter,
+} from '@popcorn/contracts/adapters';
+import { capitalize } from '@popcorn/utils';
+import { useWeb3React } from '@web3-react/core';
+import ElectionSection from 'components/GrantElections/ElectionSection';
 import { BigNumber, utils } from 'ethers';
-import capitalize from '@popcorn/utils/capitalize';
-import { ElectionTermIntToName } from '@popcorn/utils/Contracts/GrantElection/GrantElectionAdapter';
-import { ElectionsContext } from '../../app/elections';
-import { store } from 'app/store';
-import { setDualActionModal, setSingleActionModal } from '../../app/actions';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import React, { useContext, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import NavBar from '../../components/NavBar/NavBar';
+import {
+  setDualActionModal,
+  setSingleActionModal,
+} from '../../context/actions';
+import { store } from '../../context/store';
+import { connectors } from '../../context/Web3/connectors';
+import { ContractsContext } from '../../context/Web3/contracts';
+import { ElectionsContext } from '../../context/Web3/elections';
 
 export interface IGrantRoundFilter {
   active: boolean;
@@ -82,9 +89,8 @@ export default function AllGrants() {
   const { elections } = useContext(ElectionsContext);
   const { dispatch } = useContext(store);
 
-  const [pendingVotes, setPendingVotes] = useState<PendingVotes>(
-    defaultPendingVotes,
-  );
+  const [pendingVotes, setPendingVotes] =
+    useState<PendingVotes>(defaultPendingVotes);
   const [voiceCredits, setVoiceCredits] = useState(0);
   const [activeGrantRound, scrollToGrantRound] = useState<number>();
   const [grantRoundFilter, setGrantRoundFilter] = useState<IGrantRoundFilter>({
@@ -126,6 +132,7 @@ export default function AllGrants() {
     }
   }, [contracts, account]);
 
+  //TODO this functions in not implemented, should this be here?
   function registerForElection(grant_term) {
     // Register for selected election
     let connected = contracts.election.connect(library.getSigner());
@@ -139,8 +146,7 @@ export default function AllGrants() {
           type: 'info',
           onConfirm: {
             label: 'Done',
-            onClick: () =>
-              setSingleActionModal(false),
+            onClick: () => dispatch(setSingleActionModal(false)),
           },
         });
         let newElectionSignedUpForArray = electionsSignedUpFor;
@@ -155,15 +161,12 @@ export default function AllGrants() {
           type: 'error',
           onConfirm: {
             label: 'Go Back',
-            onClick: () =>
-              setSingleActionModal(false),
+            onClick: () => dispatch(setSingleActionModal(false)),
           },
         });
       });
   }
   const [selectedGrantTerms, setSelectedGrantTerms] = useState<number[]>([]);
-
-
 
   useEffect(() => {
     if (router?.query?.type) {
@@ -266,39 +269,14 @@ export default function AllGrants() {
     );
 
     try {
+      toast.loading('Submitting Votes...');
       await contracts.election
         .connect(library.getSigner())
         .vote(txArgs[0], txArgs[1], txArgs[2]);
-
-      dispatch(setDualActionModal(false));
-      dispatch(setSingleActionModal({
-        title: 'Success!',
-        content: 'You have successfully voted in this election. Thank you!',
-        visible: true,
-        onConfirm: {
-          label: 'Close',
-          onClick: () => { dispatch(setSingleActionModal(false))}
-        }
-      }))
-      // todo: set succesful tx notification
+      toast.success('Voted sucessfully!');
       // setup listener for confirmation
     } catch (err) {
-      dispatch(setDualActionModal(false));
-      dispatch(
-        setSingleActionModal({
-          content: `There was an error processing this transaction: ${err.message}`,
-          title: 'Transaction Failed',
-          visible: true,
-          type: 'error',
-          onConfirm: {
-            label: 'Close',
-            onClick: () =>
-              dispatch(
-                setSingleActionModal(false),
-              ),
-          },
-        }),
-      );
+      toast.error(err.data.message.split("'")[1]);
     }
   };
 
@@ -353,23 +331,24 @@ export default function AllGrants() {
               assignVotes={assignVotes}
               connectWallet={connectWallet}
               submitVotes={(grantTerm) => {
-                dispatch(setDualActionModal({
-                  content:
-                    'You are about to submit your vote. You will not be able to vote again for this grant election after you submit your vote. \
+                dispatch(
+                  setDualActionModal({
+                    content:
+                      'You are about to submit your vote. You will not be able to vote again for this grant election after you submit your vote. \
                      Confirm to continue.',
-                  title: 'Confirm Vote',
-                  onConfirm: {
-                    label: 'Confirm Vote',
-                    onClick: () => {
-                      submitVotes(grantTerm);
+                    title: 'Confirm Vote',
+                    onConfirm: {
+                      label: 'Confirm Vote',
+                      onClick: () => {
+                        submitVotes(grantTerm);
+                      },
                     },
-                  },
-                  onDismiss: {
-                    label: 'Cancel',
-                    onClick: () =>
-                    setDualActionModal(false),
-                  },
-                }));
+                    onDismiss: {
+                      label: 'Cancel',
+                      onClick: () => dispatch(setDualActionModal(false)),
+                    },
+                  }),
+                );
               }}
               scrollToGrantRound={scrollToGrantRound}
               setGrantRoundFilter={setGrantRoundFilter}
@@ -410,7 +389,10 @@ export default function AllGrants() {
                 </div>
                 <div className="mt-4 text-lg text-gray-600">
                   The {ElectionTermIntToName[election]} grant election is:{' '}
-                  <span className="font-semibold text-gray-900">{elections[election]?.electionStateStringLong}</span>.
+                  <span className="font-semibold text-gray-900">
+                    {elections[election]?.electionStateStringLong}
+                  </span>
+                  .
                 </div>
               </div>
               <div className="mt-6 rounded-md shadow lg:mt-0 lg:ml-10 lg:flex-shrink-0">

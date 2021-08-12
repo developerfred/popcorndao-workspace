@@ -1,15 +1,15 @@
-import { useWeb3React } from '@web3-react/core';
 import { Web3Provider } from '@ethersproject/providers';
-import { useState, useEffect, useContext } from 'react';
-import { connectors } from '../../containers/Web3/connectors';
-import { utils } from 'ethers';
-import NavBar from '../../containers/NavBar/NavBar';
+import { useWeb3React } from '@web3-react/core';
 import DropdownSelect from 'components/DropdownSelect';
-import { ContractsContext } from 'app/contracts';
+import MainActionButton from 'components/MainActionButton';
+import { utils } from 'ethers';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
-import MainActionButton from 'components/MainActionButton';
-import StakingResponseModal from 'components/Staking/StakingResponseModal';
+import { useContext, useEffect, useState } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
+import NavBar from '../../components/NavBar/NavBar';
+import { connectors } from '../../context/Web3/connectors';
+import { ContractsContext } from '../../context/Web3/contracts';
 
 const ONE_WEEK = 604800;
 const lockPeriods = [
@@ -32,9 +32,6 @@ export default function LockPop() {
   const [voiceCredits, setVoiceCredits] = useState<number>(0);
   const [approved, setApproval] = useState<number>(0);
   const [wait, setWait] = useState<boolean>(false);
-  const [stakeStatus, setStakeStatus] = useState<
-    'error' | 'success' | 'none'
-  >();
 
   useEffect(() => {
     setVoiceCredits(popToLock * (lockDuration / (ONE_WEEK * 52 * 4)));
@@ -54,7 +51,7 @@ export default function LockPop() {
 
   const getLockedPop = async () => {
     setLockedPop(
-      Number(utils.formatEther(await contracts.staking.balances(account))),
+      Number(utils.formatEther(await contracts.staking.balanceOf(account))),
     );
   };
 
@@ -66,50 +63,38 @@ export default function LockPop() {
 
   async function lockPop(): Promise<void> {
     setWait(true);
+    toast.loading('Staking POP...');
     const lockedPopInEth = utils.parseEther(popToLock.toString());
     const signer = library.getSigner();
     const connectedStaking = await contracts.staking.connect(signer);
     await connectedStaking
       .stake(lockedPopInEth, lockDuration)
       .then((res) => {
-        setStakeStatus('success');
+        toast.success('POP staked!');
       })
       .catch((err) => {
-        setStakeStatus('error');
+        toast.error(err.data.message.split("'")[1]);
       });
     setWait(false);
   }
 
   async function approve(): Promise<void> {
     setWait(true);
+    toast.loading('Approving POP for staking...');
+
     const lockedPopInEth = utils.parseEther('100000000');
     const connected = await contracts.pop.connect(library.getSigner());
     await connected
       .approve(process.env.ADDR_STAKING, lockedPopInEth)
-      .then((res) => console.log('approved', res))
-      .catch((err) => console.log('err', err));
+      .then((res) => toast.success('POP approved!'))
+      .catch((err) => toast.error(err.data.message.split("'")[1]));
     setWait(false);
   }
 
   return (
     <div className="w-full bg-gray-900 h-screen">
       <NavBar />
-      {stakeStatus === 'error' && (
-        <StakingResponseModal
-          title={'Error'}
-          text={'Something went wrong...'}
-          handleClick={() => setStakeStatus('none')}
-        />
-      )}
-      {stakeStatus === 'success' && (
-        <StakingResponseModal
-          title={'Success'}
-          text={`You now have ${voiceCredits.toFixed(
-            2,
-          )} voice Credits to vote with.`}
-          handleClick={() => setStakeStatus('none')}
-        />
-      )}
+      <Toaster position="top-right" />
       <div className="bg-gray-900">
         <div className="pt-12 px-4 sm:px-6 lg:px-8 lg:pt-20">
           <div className="text-center">
