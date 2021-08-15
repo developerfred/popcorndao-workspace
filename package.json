@@ -13,7 +13,8 @@
     "pretify": "prettier --write .",
     "test": "yarn lerna run test",
     "coverage": "yarn lerna run coverage",
-    "netlify-build": "lerna run --scope @popcorn/contracts compile; cd packages/app; yarn next build"
+    "netlify-build": "lerna run --scope @popcorn/contracts compile; cd packages/app; yarn next build",
+    "docify": "lerna run --scope @popcorn/contracts docify"
   },
   "dependencies": {
     "@netlify/plugin-nextjs": "^3.3.1",
